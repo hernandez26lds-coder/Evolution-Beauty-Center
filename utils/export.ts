@@ -1,5 +1,6 @@
 
 import * as XLSXModule from 'xlsx';
+import { AppState } from '../types';
 
 // Helper para obtener el objeto XLSX correcto dependiendo de cómo lo cargue el navegador
 const getXLSX = () => {
@@ -9,23 +10,84 @@ const getXLSX = () => {
   return anyModule;
 };
 
-export const exportToCSV = (data: any[], fileName: string) => {
-  if (!data.length) return;
-  const headers = Object.keys(data[0]).join(',');
-  const rows = data.map(obj => 
-    Object.values(obj).map(val => 
-      typeof val === 'string' ? `"${val.replace(/"/g, '""')}"` : val
-    ).join(',')
-  ).join('\n');
-  
-  const csvContent = `data:text/csv;charset=utf-8,${headers}\n${rows}`;
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `${fileName}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+export const exportFullSystemBackup = (state: AppState) => {
+  const XLSX = getXLSX();
+  const wb = XLSX.utils.book_new();
+
+  // 1. Hoja de Transacciones (Finanzas)
+  const transactionsData = state.transactions.map(t => ({
+    ID: t.id,
+    Fecha: new Date(t.date).toLocaleString(),
+    Tipo: t.type === 'INCOME' ? 'Ingreso' : 'Egreso',
+    Categoria: t.category,
+    Descripcion: t.description,
+    Cliente: t.clientName || 'N/A',
+    Monto: t.amount,
+    Metodo_Pago: t.paymentMethod,
+    Items_Detalle: t.items?.map(i => `${i.quantity}x ${i.name}`).join('; ') || 'N/A'
+  }));
+  const wsFinance = XLSX.utils.json_to_sheet(transactionsData);
+  XLSX.utils.book_append_sheet(wb, wsFinance, 'Historial_Financiero');
+
+  // 2. Hoja de Movimientos de Inventario (Kardex)
+  const movementsData = state.movements.map(m => {
+    const product = state.products.find(p => p.id === m.productId);
+    return {
+      Fecha: new Date(m.date).toLocaleString(),
+      Producto: product?.name || 'Desconocido',
+      SKU: product?.sku || 'N/A',
+      Tipo: m.type === 'IN' ? 'Entrada (+)' : 'Salida (-)',
+      Cantidad: m.quantity,
+      Motivo: m.reason,
+      Usuario: m.user,
+      Notas: m.notes
+    };
+  });
+  const wsMovements = XLSX.utils.json_to_sheet(movementsData);
+  XLSX.utils.book_append_sheet(wb, wsMovements, 'Kardex_Inventario');
+
+  // 3. Hoja de Clientes
+  const clientsData = state.clients.map(c => ({
+    ID: c.id,
+    Nombre: c.name,
+    Telefono: c.phone,
+    Email: c.email || 'N/A',
+    Notas: c.notes || 'N/A',
+    Fecha_Registro: new Date(c.createdAt).toLocaleDateString()
+  }));
+  const wsClients = XLSX.utils.json_to_sheet(clientsData);
+  XLSX.utils.book_append_sheet(wb, wsClients, 'Base_Clientes');
+
+  // 4. Hoja de Productos y Stock
+  const productsData = state.products.map(p => ({
+    SKU: p.sku,
+    Nombre: p.name,
+    Marca: p.brand,
+    Categoria: p.category,
+    Costo: p.cost,
+    Precio_Venta: p.price,
+    Stock_Actual: state.inventory[p.id]?.currentStock || 0,
+    Stock_Minimo: state.inventory[p.id]?.minStock || 0,
+    Proveedor: p.provider
+  }));
+  const wsProducts = XLSX.utils.json_to_sheet(productsData);
+  XLSX.utils.book_append_sheet(wb, wsProducts, 'Inventario_y_Precios');
+
+  // 5. Hoja de Servicios
+  const servicesData = state.services.map(s => ({
+    Codigo: s.code,
+    Nombre: s.name,
+    Categoria: s.category,
+    Precio: s.price,
+    Duracion_Min: s.duration,
+    Estado: s.status
+  }));
+  const wsServices = XLSX.utils.json_to_sheet(servicesData);
+  XLSX.utils.book_append_sheet(wb, wsServices, 'Catalogo_Servicios');
+
+  // Generar archivo
+  const dateStr = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Evolution_Beauty_Backup_${dateStr}.xlsx`);
 };
 
 export const exportToExcel = (data: any[], fileName: string, sheetName: string = 'Data') => {

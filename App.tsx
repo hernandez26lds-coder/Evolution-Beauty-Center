@@ -24,7 +24,8 @@ import {
 } from './constants';
 import { 
   exportToExcel, 
-  generateMonthlyReport 
+  generateMonthlyReport,
+  exportFullSystemBackup 
 } from './utils/export';
 import { 
   Plus, 
@@ -39,7 +40,8 @@ import {
   Users,
   History,
   Phone,
-  Clock
+  Clock,
+  Database
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -302,7 +304,7 @@ const App: React.FC = () => {
               <p className="text-gray-500">Gestión de ingresos y egresos</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => exportToExcel(state.transactions, 'Finanzas')} className="px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 flex items-center gap-2 text-sm font-medium transition-all"><Download size={16} /> Excel</button>
+              <button onClick={() => exportFullSystemBackup(state)} className="px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 flex items-center gap-2 text-sm font-medium transition-all shadow-sm"><Database size={16} /> Respaldo DB</button>
               <button onClick={() => openModal('finance', 'SERVICE')} className="px-4 py-2 bg-gold-500 text-white rounded-xl hover:bg-gold-600 flex items-center gap-2 shadow-sm text-sm font-bold transition-all"><Scissors size={16} /> Venta Servicio</button>
               <button onClick={() => openModal('finance', 'PRODUCT')} className="px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 flex items-center gap-2 shadow-sm text-sm font-bold transition-all"><ShoppingCart size={16} /> Venta Producto</button>
               <button onClick={() => openModal('finance', 'GENERAL')} className="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 flex items-center gap-2 shadow-sm text-sm font-bold transition-all"><Receipt size={16} /> Registrar Gasto</button>
