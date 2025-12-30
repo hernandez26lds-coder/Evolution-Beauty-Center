@@ -9,20 +9,16 @@ import {
   BarChart as BarChartIcon,
   Activity,
   Database,
-  Calendar
+  ArrowUpRight
 } from 'lucide-react';
 import { 
-  LineChart, 
-  Line, 
   XAxis, 
   YAxis, 
-  CartesianGrid, 
-  Tooltip, 
   ResponsiveContainer,
   BarChart,
   Bar,
   Cell,
-  Legend
+  Tooltip
 } from 'recharts';
 import { AppState, InventoryItem } from '../types';
 import { exportFullSystemBackup } from '../utils/export';
@@ -32,7 +28,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ state }) => {
-  const { transactions, products, inventory } = state;
+  const { transactions, products, inventory, movements } = state;
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -60,27 +56,16 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
     };
   }, [transactions, inventory]);
 
-  const weeklyData = useMemo(() => {
-    const data = [];
-    const now = new Date();
+  const movementStats = useMemo(() => {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     
-    // Generar datos de los últimos 7 días
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(now.getDate() - i);
-      const dateKey = d.toDateString();
-      const label = d.toLocaleDateString('es-ES', { weekday: 'short' });
-      
-      const dayTrans = transactions.filter(t => new Date(t.date).toDateString() === dateKey);
-      
-      data.push({
-        name: label.charAt(0).toUpperCase() + label.slice(1),
-        Ingresos: dayTrans.filter(t => t.type === 'INCOME').reduce((acc, curr) => acc + curr.amount, 0),
-        Egresos: dayTrans.filter(t => t.type === 'EXPENSE').reduce((acc, curr) => acc + curr.amount, 0)
-      });
-    }
-    return data;
-  }, [transactions]);
+    const recentMovements = movements.filter(m => new Date(m.date) >= sevenDaysAgo);
+    const ins = recentMovements.filter(m => m.type === 'IN').reduce((acc, curr) => acc + curr.quantity, 0);
+    const outs = recentMovements.filter(m => m.type === 'OUT').reduce((acc, curr) => acc + curr.quantity, 0);
+    
+    return { ins, outs };
+  }, [movements]);
 
   const categoryData = useMemo(() => {
     const categories: Record<string, number> = {};
@@ -109,7 +94,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
     <div className="space-y-8 animate-in fade-in duration-500 pb-10">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Panel de Gestión</h2>
+          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Resumen Ejecutivo</h2>
           <p className="text-gray-500 mt-1">Evolución de Evolution Beauty Center</p>
         </div>
         <div className="flex gap-3 w-full md:w-auto">
@@ -124,181 +109,108 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
 
       {/* Tarjetas de Estadísticas Rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group">
+          <div className="flex items-center justify-between mb-4 relative z-10">
             <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Ingresos Mes</span>
             <div className="p-2 bg-gold-50 text-gold-600 rounded-2xl"><TrendingUp size={18} /></div>
           </div>
-          <p className="text-3xl font-black text-gray-900">${stats.income.toLocaleString()}</p>
-          <div className="flex items-center gap-1 mt-2">
-            <span className="text-[10px] font-bold text-green-600">Hoy:</span>
-            <span className="text-[10px] font-black text-gray-700">+${stats.todayIncome.toLocaleString()}</span>
+          <p className="text-3xl font-black text-gray-900 relative z-10">${stats.income.toLocaleString()}</p>
+          <div className="flex items-center gap-1 mt-2 relative z-10">
+            <ArrowUpRight size={14} className="text-green-500" />
+            <span className="text-[10px] font-bold text-green-600">Hoy: +${stats.todayIncome.toLocaleString()}</span>
           </div>
+          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gold-500/5 rounded-full group-hover:scale-150 transition-transform"></div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between mb-4">
             <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Gastos Mes</span>
             <div className="p-2 bg-red-50 text-red-500 rounded-2xl"><TrendingDown size={18} /></div>
           </div>
           <p className="text-3xl font-black text-gray-900">${stats.expense.toLocaleString()}</p>
-          <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase">Operaciones</p>
+          <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase">Flujo Saliente</p>
+          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-red-500/5 rounded-full group-hover:scale-150 transition-transform"></div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Balance</span>
+            <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Utilidad Neta</span>
             <div className="p-2 bg-gray-900 text-white rounded-2xl"><DollarSign size={18} /></div>
           </div>
           <p className={`text-3xl font-black ${stats.balance >= 0 ? 'text-gold-600' : 'text-red-600'}`}>
             ${stats.balance.toLocaleString()}
           </p>
-          <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-tighter">Rentabilidad</p>
+          <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-tighter">Rentabilidad Real</p>
+          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gray-900/5 rounded-full group-hover:scale-150 transition-transform"></div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Insumos</span>
+            <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Alertas Stock</span>
             <div className="p-2 bg-amber-50 text-amber-600 rounded-2xl"><AlertTriangle size={18} /></div>
           </div>
           <p className="text-3xl font-black text-gray-900">{stats.lowStockCount}</p>
-          <p className="text-[10px] text-amber-600 font-bold mt-2 uppercase tracking-tighter">Alertas de Stock</p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className={`w-2 h-2 rounded-full ${stats.lowStockCount > 0 ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`}></span>
+            <span className="text-[10px] text-gray-500 font-bold uppercase">{stats.lowStockCount > 0 ? 'Reposición requerida' : 'Stock saludable'}</span>
+          </div>
         </div>
       </div>
 
-      {/* GRÁFICO DE DESEMPEÑO SEMANAL (LÍNEA) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Calendar className="text-gold-500" size={18} />
-                <h3 className="text-sm font-black text-gray-800 uppercase tracking-[0.15em]">Desempeño Semanal</h3>
-              </div>
-              <p className="text-[10px] text-gray-400 font-bold uppercase">Comparativa de flujo de caja de los últimos 7 días</p>
+      {/* SECCIÓN DE MÉTRICAS SECUNDARIAS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* MOVIMIENTOS RECIENTES */}
+        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-3 bg-gold-50 rounded-2xl text-gold-600">
+              <Activity size={20} />
             </div>
-            <div className="flex items-center gap-6 bg-gray-50 px-4 py-2 rounded-xl">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-1 bg-gold-500 rounded-full"></div>
-                <span className="text-[10px] font-black text-gray-600 uppercase tracking-tighter">Ingresos</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-1 bg-gray-300 rounded-full"></div>
-                <span className="text-[10px] font-black text-gray-600 uppercase tracking-tighter">Egresos</span>
-              </div>
+            <div>
+              <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Actividad 7 Días</h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Balance de movimientos de inventario</p>
             </div>
           </div>
-          
-          <div className="h-[320px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: '#9ca3af', fontSize: 10, fontWeight: 700}} 
-                  dy={15}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: '#9ca3af', fontSize: 10, fontWeight: 700}}
-                />
-                <Tooltip 
-                  cursor={{ stroke: '#f3f4f6', strokeWidth: 2 }}
-                  contentStyle={{
-                    borderRadius: '20px', 
-                    border: 'none', 
-                    boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.15)', 
-                    padding: '16px',
-                    fontSize: '11px',
-                    fontWeight: '800',
-                    backgroundColor: '#fff'
-                  }}
-                  itemStyle={{ padding: '2px 0' }}
-                />
-                <Line 
-                  name="Ingresos"
-                  type="monotone" 
-                  dataKey="Ingresos" 
-                  stroke="#ba9542" 
-                  strokeWidth={4} 
-                  dot={{ r: 5, fill: '#ba9542', strokeWidth: 2, stroke: '#fff' }} 
-                  activeDot={{ r: 8, strokeWidth: 0, fill: '#ba9542' }} 
-                  animationDuration={1500}
-                />
-                <Line 
-                  name="Egresos"
-                  type="monotone" 
-                  dataKey="Egresos" 
-                  stroke="#d1d5db" 
-                  strokeWidth={2} 
-                  strokeDasharray="5 5"
-                  dot={{ r: 4, fill: '#d1d5db', strokeWidth: 2, stroke: '#fff' }} 
-                  activeDot={{ r: 6, strokeWidth: 0, fill: '#d1d5db' }}
-                  animationDuration={1500}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="p-6 bg-green-50 rounded-3xl border border-green-100 flex flex-col items-center text-center">
+              <span className="text-[10px] font-black text-green-700 uppercase tracking-widest mb-2">Entradas</span>
+              <span className="text-4xl font-black text-green-700">{movementStats.ins}</span>
+              <span className="text-[9px] text-green-600/60 font-bold mt-1 uppercase">Unidades</span>
+            </div>
+            <div className="p-6 bg-red-50 rounded-3xl border border-red-100 flex flex-col items-center text-center">
+              <span className="text-[10px] font-black text-red-700 uppercase tracking-widest mb-2">Salidas</span>
+              <span className="text-4xl font-black text-red-700">{movementStats.outs}</span>
+              <span className="text-[9px] text-red-600/60 font-bold mt-1 uppercase">Unidades</span>
+            </div>
           </div>
         </div>
 
-        {/* DISTRIBUCIÓN POR CATEGORÍA */}
+        {/* TOP CATEGORÍAS */}
         <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <BarChartIcon className="text-gold-500" size={18} />
-                <h3 className="text-sm font-black text-gray-800 uppercase tracking-[0.15em]">Top Ingresos</h3>
-              </div>
-              <p className="text-[10px] text-gray-400 font-bold uppercase">Distribución por categoría</p>
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-3 bg-gray-900 rounded-2xl text-white">
+              <BarChartIcon size={20} />
             </div>
-            <Activity size={18} className="text-gold-300" />
+            <div>
+              <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Top Ingresos</h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Categorías con mayor rendimiento</p>
+            </div>
           </div>
-          
-          <div className="h-[250px] w-full flex-1">
+          <div className="h-[200px] w-full flex-1">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={categoryData} layout="vertical" margin={{ left: -20, right: 20 }}>
                 <XAxis type="number" hide />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: '#4b5563', fontSize: 10, fontWeight: 800}}
-                  width={100}
-                />
-                <Tooltip 
-                   cursor={{fill: '#f9fafb', radius: 10}}
-                   contentStyle={{
-                    borderRadius: '16px', 
-                    border: 'none', 
-                    boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', 
-                  }}
-                />
-                <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={16}>
-                  {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
+                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fill: '#4b5563', fontSize: 10, fontWeight: 800}} width={100} />
+                <Tooltip cursor={{fill: '#f9fafb', radius: 10}} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={20}>
+                  {categoryData.map((e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
-
-          <div className="mt-6 pt-6 border-t border-gray-50">
-            <div className="flex justify-between items-center bg-gold-50 p-4 rounded-2xl">
-              <div>
-                <p className="text-[10px] font-black text-gold-600 uppercase tracking-widest">Margen Bruto</p>
-                <p className="text-2xl font-black text-gray-900">{Math.max(0, Math.round((stats.balance / (stats.income || 1)) * 100))}%</p>
-              </div>
-              <TrendingUp className="text-gold-500" size={32} />
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* ALERTAS DE INVENTARIO */}
+      {/* ALERTAS DE INVENTARIO CRÍTICO */}
       <div className="bg-gray-900 p-8 rounded-[3rem] shadow-2xl text-white overflow-hidden relative">
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-8">
@@ -307,40 +219,32 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
                 <PackageCheck className="text-gold-400" size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold tracking-tight">Control de Insumos Críticos</h3>
-                <p className="text-xs text-gray-400 font-medium">Productos que requieren reposición inmediata</p>
+                <h3 className="text-lg font-bold tracking-tight">Insumos Críticos</h3>
+                <p className="text-xs text-gray-400 font-medium">Reposición de stock sugerida</p>
               </div>
             </div>
-            <button className="px-4 py-2 bg-gold-500 text-white text-xs font-bold rounded-xl uppercase tracking-widest hover:bg-gold-400 transition-colors">
-              Gestionar Compras
-            </button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {lowStockItems.length > 0 ? lowStockItems.map(p => (
-              <div key={p.id} className="flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-[1.5rem] backdrop-blur-sm hover:bg-white/10 transition-all group">
-                <div className="flex flex-col">
-                  <span className="text-sm font-bold text-gray-100 group-hover:text-gold-300 transition-colors">{p.name}</span>
-                  <span className="text-[10px] text-gold-500 font-black uppercase tracking-widest mt-1">{p.brand}</span>
+              <div key={p.id} className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm hover:bg-white/10 transition-colors">
+                <div>
+                  <span className="text-sm font-bold text-gray-100 block">{p.name}</span>
+                  <span className="text-[9px] text-gold-500 font-black uppercase tracking-widest">{p.brand}</span>
                 </div>
-                <div className="text-right flex flex-col items-end">
-                  <span className="text-xl font-black text-red-400">{inventory[p.id]?.currentStock}</span>
-                  <span className="text-[9px] text-gray-500 block uppercase font-black tracking-tighter">Disponible</span>
+                <div className="text-right">
+                  <span className="text-lg font-black text-red-400">{inventory[p.id]?.currentStock}</span>
+                  <span className="text-[9px] text-gray-500 block uppercase font-bold">Unid.</span>
                 </div>
               </div>
             )) : (
-              <div className="col-span-full py-12 text-center">
-                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <PackageCheck size={32} className="text-gold-500/50" />
-                </div>
-                <p className="text-gray-400 font-medium italic">Todo el inventario está en niveles óptimos.</p>
+              <div className="col-span-full py-4 text-center">
+                <p className="text-gray-500 italic text-sm">Todo el stock está en niveles saludables.</p>
               </div>
             )}
           </div>
         </div>
-        
-        {/* Elemento Decorativo */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500/5 rounded-full blur-[100px] -mr-40 -mt-40"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gold-500/10 rounded-full blur-[80px] -mr-32 -mt-32"></div>
       </div>
     </div>
   );
