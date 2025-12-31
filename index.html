@@ -1,12 +1,14 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Evolution Beauty Center</title>
+    <title>Evolution Beauty Center - Gestión Profesional</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Babel para transpilar TSX en tiempo de ejecución en el navegador -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script>
       tailwind.config = {
         darkMode: 'class',
@@ -48,10 +50,27 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #a37c36;
       }
-      /* Prevenir saltos de layout durante carga */
+      /* Estado de carga elegante */
       #root:empty {
         background: #fafafa;
         min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #root:empty::after {
+        content: "Cargando Evolution Beauty...";
+        font-weight: 600;
+        color: #ba9542;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
       }
     </style>
   <script type="importmap">
@@ -71,6 +90,7 @@
 </head>
   <body class="bg-[#fafafa] text-gray-900">
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <!-- Se cambia el tipo a text/babel para que BabelStandalone procese el TSX -->
+    <script type="text/babel" data-type="module" src="./index.tsx"></script>
   </body>
 </html>

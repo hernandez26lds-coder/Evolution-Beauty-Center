@@ -1,5 +1,5 @@
 {
   "name": "Evolution Beauty Center - Gestion de Finanzas",
-  "description": "A comprehensive finance and inventory management system for beauty salons, featuring real-time stock tracking, financial reporting, and data export.",
+  "description": "Sistema de gestión optimizado para despliegue en Google Cloud Run.",
   "requestFramePermissions": []
 }

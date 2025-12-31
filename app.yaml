@@ -1,0 +1,19 @@
+
+runtime: python39
+instance_class: F1
+
+handlers:
+# Forzar la entrega de index.tsx para que Babel pueda leerlo
+- url: /index.tsx
+  static_files: index.tsx
+  upload: index.tsx
+
+# Archivos de la aplicación y recursos estáticos
+- url: /(.+\.tsx|.+\.ts|.+\.js|.+\.json|.+\.png|.+\.jpg|.+\.svg)$
+  static_files: \1
+  upload: .+\.(tsx|ts|js|json|png|jpg|svg)$
+
+# Redirección global al index.html para cualquier otra ruta
+- url: /.*
+  static_files: index.html
+  upload: index.html
