@@ -18,6 +18,15 @@ export interface Client extends AuditFields {
   notes?: string;
 }
 
+export interface Provider extends AuditFields {
+  id: string;
+  name: string;
+  contact: string;
+  phone: string;
+  category: string;
+  notes?: string;
+}
+
 export interface Service extends AuditFields {
   id: string;
   code: string;
@@ -85,12 +94,14 @@ export interface Transaction extends AuditFields {
   reference?: string;
   relatedId?: string; // Links to service/product/movement
   items?: TransactionItem[];
+  provider?: string;
 }
 
 export interface AppState {
   services: Service[];
   products: Product[];
   clients: Client[];
+  providers: Provider[];
   inventory: Record<string, InventoryItem>;
   movements: InventoryMovement[];
   transactions: Transaction[];

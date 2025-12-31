@@ -79,6 +79,9 @@ export const INITIAL_STATE: AppState = {
     { id: 'p2', sku: 'P002', name: 'Tinte 7.1 Rubio Ceniza', brand: 'Wella', category: 'Tinte', cost: 8.5, price: 0, provider: 'Beauty Supply', unit: 'unidad', status: 'Active', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
   ],
   clients: [],
+  providers: [
+    { id: 'pr1', name: 'Distribuidora Pro', contact: 'Juan Perez', phone: '809-555-0101', category: 'Insumos Capilares', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+  ],
   inventory: {
     'p1': { productId: 'p1', currentStock: 10, minStock: 5, location: 'Estante A' },
     'p2': { productId: 'p2', currentStock: 3, minStock: 10, location: 'Estante B' }

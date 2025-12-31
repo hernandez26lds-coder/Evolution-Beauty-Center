@@ -9,7 +9,8 @@ import {
   BarChart as BarChartIcon,
   Activity,
   Database,
-  ArrowUpRight
+  ArrowUpRight,
+  Calendar
 } from 'lucide-react';
 import { 
   XAxis, 
@@ -18,7 +19,9 @@ import {
   BarChart,
   Bar,
   Cell,
-  Tooltip
+  Tooltip,
+  CartesianGrid,
+  Legend
 } from 'recharts';
 import { AppState, InventoryItem } from '../types';
 import { exportFullSystemBackup } from '../utils/export';
@@ -55,6 +58,34 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
       todayIncome: todayTransactions.filter(t => t.type === 'INCOME').reduce((acc, curr) => acc + curr.amount, 0)
     };
   }, [transactions, inventory]);
+
+  const weeklyComparisonData = useMemo(() => {
+    const data = [];
+    const now = new Date();
+    
+    // Calcular datos para las últimas 4 semanas
+    for (let i = 3; i >= 0; i--) {
+      const weekEnd = new Date(now);
+      weekEnd.setDate(now.getDate() - (i * 7));
+      const weekStart = new Date(weekEnd);
+      weekStart.setDate(weekEnd.getDate() - 6);
+      
+      const weekTransactions = transactions.filter(t => {
+        const d = new Date(t.date);
+        return d >= weekStart && d <= weekEnd;
+      });
+
+      const inc = weekTransactions.filter(t => t.type === 'INCOME').reduce((acc, curr) => acc + curr.amount, 0);
+      const exp = weekTransactions.filter(t => t.type === 'EXPENSE').reduce((acc, curr) => acc + curr.amount, 0);
+      
+      data.push({
+        name: i === 0 ? 'Esta Sem.' : `Hace ${i} sem.`,
+        Entradas: inc,
+        Salidas: exp
+      });
+    }
+    return data;
+  }, [transactions]);
 
   const movementStats = useMemo(() => {
     const sevenDaysAgo = new Date();
@@ -154,6 +185,45 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
             <span className={`w-2 h-2 rounded-full ${stats.lowStockCount > 0 ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`}></span>
             <span className="text-[10px] text-gray-500 font-bold uppercase">{stats.lowStockCount > 0 ? 'Reposición requerida' : 'Stock saludable'}</span>
           </div>
+        </div>
+      </div>
+
+      {/* NUEVO GRÁFICO DE DESEMPEÑO POR SEMANAS */}
+      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="p-3 bg-gold-50 rounded-2xl text-gold-600">
+            <Calendar size={20} />
+          </div>
+          <div>
+            <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Flujo de Caja por Semanas</h3>
+            <p className="text-[10px] text-gray-400 font-bold uppercase">Comparativa de las últimas 4 semanas</p>
+          </div>
+        </div>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={weeklyComparisonData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+              <XAxis 
+                dataKey="name" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{fill: '#9ca3af', fontSize: 10, fontWeight: 700}} 
+                dy={10}
+              />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{fill: '#9ca3af', fontSize: 10, fontWeight: 700}}
+              />
+              <Tooltip 
+                cursor={{fill: '#f9fafb', radius: 10}}
+                contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+              />
+              <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
+              <Bar dataKey="Entradas" fill="#ba9542" radius={[6, 6, 0, 0]} barSize={24} />
+              <Bar dataKey="Salidas" fill="#111827" radius={[6, 6, 0, 0]} barSize={24} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

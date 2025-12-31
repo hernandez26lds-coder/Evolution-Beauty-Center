@@ -13,7 +13,9 @@ import {
   Sun,
   User,
   RefreshCcw,
-  Users
+  Users,
+  FileUp,
+  Truck
 } from 'lucide-react';
 import { Role } from '../types';
 
@@ -35,7 +37,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
     { id: 'clients', label: 'Clientes', icon: Users, roles: [Role.ADMIN, Role.CASHIER] },
     { id: 'services', label: 'Servicios', icon: Scissors, roles: [Role.ADMIN, Role.INVENTORY] },
     { id: 'products', label: 'Productos', icon: Package, roles: [Role.ADMIN, Role.INVENTORY] },
+    { id: 'providers', label: 'Suplidores', icon: Truck, roles: [Role.ADMIN, Role.INVENTORY] },
     { id: 'inventory', label: 'Inventario', icon: Database, roles: [Role.ADMIN, Role.INVENTORY, Role.CASHIER] },
+    { id: 'imports', label: 'Importar Datos', icon: FileUp, roles: [Role.ADMIN] },
   ];
 
   const filteredMenu = menuItems.filter(item => item.roles.includes(userRole));
@@ -65,7 +69,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
       `}>
         <div className="h-full flex flex-col">
           <div className="p-8 flex flex-col items-center">
-            <div className="w-32 h-32 mb-4 bg-white rounded-full p-2 flex items-center justify-center overflow-hidden border border-gray-100">
+            <div className="w-32 h-32 mb-4 bg-white rounded-full p-2 flex items-center justify-center overflow-hidden border border-gray-100 shadow-md">
                <img src="https://api.dicebear.com/7.x/initials/svg?seed=Evolution&backgroundColor=ba9542" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div className="text-center">
@@ -74,7 +78,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
             </div>
           </div>
 
-          <nav className="flex-1 px-4 space-y-1 mt-4">
+          <nav className="flex-1 px-4 space-y-1 mt-4 overflow-y-auto">
             {filteredMenu.map((item) => {
               const Icon = item.icon;
               return (
